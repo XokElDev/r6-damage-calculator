@@ -34,8 +34,8 @@
 
     <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
         
-        <div class="flex justify-between items-start mb-8">
-             <div class="text-left">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-8">
+             <div class="text-left mb-4 md:mb-0">
                 <h1 data-lang-key="title" class="text-3xl md:text-4xl font-bold text-cyan-400">R6 Damage Calculator</h1>
                 <p data-lang-key="subtitle" class="text-gray-400 mt-2">Compara el daño base con el daño aumentado en diferentes escenarios.</p>
             </div>
@@ -66,7 +66,7 @@
         <!-- Tabs Container -->
         <div id="tabs-container" class="mt-8 hidden">
             <h3 data-lang-key="tabs_header" class="text-center text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider"></h3>
-            <nav class="flex justify-around w-full border-b border-gray-700 -mb-px" aria-label="Tabs">
+            <nav class="flex flex-col md:flex-row md:justify-around w-full md:border-b md:border-gray-700 md:-mb-px" aria-label="Tabs">
                 <!-- Tabs will be dynamically generated -->
             </nav>
         </div>
@@ -225,6 +225,7 @@
             // --- Functions ---
             const changeLanguage = (lang) => {
                 currentLanguage = lang;
+                document.documentElement.lang = lang;
                 document.querySelectorAll('[data-lang-key]').forEach(el => {
                     const key = el.dataset.langKey;
                     if (translations[lang][key]) {
@@ -273,14 +274,16 @@
                 let tabsHTML = '';
                 damageScenarios.forEach(scenario => {
                     const name = translations[currentLanguage][scenario.nameKey];
-                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow" data-target="content-${scenario.id}">${name} - ${scenario.percentage}</button>`;
+                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow md:flex-grow-0 w-full md:w-auto mb-1 md:mb-0 rounded-md md:rounded-none" data-target="content-${scenario.id}">${name} - ${scenario.percentage}</button>`;
                 });
                 tabsContainer.querySelector('nav').innerHTML = tabsHTML;
 
                 let panelsHTML = '';
                 damageScenarios.forEach(scenario => {
-                    let resultsHTML = '';
-                    let detailsHTML = '';
+                    let resultsTableHTML = '';
+                    let resultsCardsHTML = '';
+                    let detailsTableHTML = '';
+                    let detailsCardsHTML = '';
                     const modifiedRawDmg = rawDmg * scenario.multiplier;
                     const modifiedAugDmg = augDmg * scenario.multiplier;
 
@@ -288,28 +291,39 @@
                         const shotsRaw = Math.ceil(hp / modifiedRawDmg);
                         const shotsAugmented = Math.ceil(hp / modifiedAugDmg);
                         const hasBenefit = Math.floor(hp / modifiedRawDmg) !== Math.floor(hp / modifiedAugDmg);
+                        const operatorName = translations[currentLanguage][opKey];
                         
                         const benefitIcon = hasBenefit
                             ? `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-500/20 text-green-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></span>`
                             : `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500/20 text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.697a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></span>`;
                         
-                        const operatorName = translations[currentLanguage][opKey];
-                        resultsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-semibold text-gray-200">${shotsRaw}</td><td class="p-4 text-center text-lg font-semibold ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${shotsAugmented}</td><td class="p-4 flex justify-center items-center">${benefitIcon}</td></tr>`;
+                        // Desktop Table Rows
+                        resultsTableHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-semibold text-gray-200">${shotsRaw}</td><td class="p-4 text-center text-lg font-semibold ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${shotsAugmented}</td><td class="p-4 flex justify-center items-center">${benefitIcon}</td></tr>`;
                         
+                        // Mobile Card Views
+                        resultsCardsHTML += `<div class="bg-gray-700 rounded-lg p-4 mb-3"><h4 class="font-bold text-lg text-cyan-400">${operatorName}</h4><div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2"><div class="text-gray-400">${translations[currentLanguage].shots_base}</div><div class="text-lg font-semibold text-right">${shotsRaw}</div><div class="text-gray-400">${translations[currentLanguage].shots_augmented}</div><div class="text-lg font-semibold text-right ${hasBenefit ? 'text-cyan-400' : ''}">${shotsAugmented}</div><div class="text-gray-400 col-span-1">${translations[currentLanguage].improvement}</div><div class="flex justify-end col-span-1">${benefitIcon}</div></div></div>`;
+
                         const exactShotsRaw = hp / modifiedRawDmg;
                         const exactShotsAugmented = hp / modifiedAugDmg;
-                        detailsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-mono text-gray-200">${exactShotsRaw.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${exactShotsAugmented.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono text-yellow-400">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</td></tr>`;
+                        
+                        // Desktop Details Table Rows
+                        detailsTableHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-mono text-gray-200">${exactShotsRaw.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${exactShotsAugmented.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono text-yellow-400">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</td></tr>`;
+                        
+                        // Mobile Details Card Views
+                        detailsCardsHTML += `<div class="bg-gray-700 rounded-lg p-4 mb-3"><h4 class="font-bold text-lg text-cyan-400">${operatorName}</h4><div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2"><div class="text-gray-400">${translations[currentLanguage].exact_shots_base}</div><div class="text-lg font-mono text-right">${exactShotsRaw.toFixed(3)}</div><div class="text-gray-400">${translations[currentLanguage].exact_shots_augmented}</div><div class="text-lg font-mono text-right ${hasBenefit ? 'text-cyan-400' : ''}">${exactShotsAugmented.toFixed(3)}</div><div class="text-gray-400">${translations[currentLanguage].difference}</div><div class="text-lg font-mono text-yellow-400 text-right">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</div></div></div>`;
                     }
                     
                     panelsHTML += `
                         <div id="content-${scenario.id}" class="tab-content hidden">
                             <div class="results">
                                 <h2 class="text-2xl font-semibold text-center mb-4">${translations[currentLanguage].results_title}</h2>
-                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].improvement}</th></tr></thead><tbody>${resultsHTML}</tbody></table></div>
+                                <div class="overflow-x-auto rounded-lg hidden md:block"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].improvement}</th></tr></thead><tbody>${resultsTableHTML}</tbody></table></div>
+                                <div class="block md:hidden">${resultsCardsHTML}</div>
                             </div>
                             <div class="details mt-6">
                                 <div class="flex justify-center items-center mb-4"><h2 class="text-2xl font-semibold">${translations[currentLanguage].detailed_analysis_title}</h2><button class="toggle-details-btn ml-4 text-gray-400 hover:text-white">${eyeOpenSVG}</button></div>
-                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].difference}</th></tr></thead><tbody>${detailsHTML}</tbody></table></div>
+                                <div class="overflow-x-auto rounded-lg hidden md:block"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].difference}</th></tr></thead><tbody>${detailsTableHTML}</tbody></table></div>
+                                <div class="block md:hidden">${detailsCardsHTML}</div>
                             </div>
                         </div>`;
                 });
@@ -345,8 +359,8 @@
             tabsContainer.addEventListener('click', (e) => {
                 const button = e.target.closest('.tab-btn');
                 if (button) {
-                    tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'border-cyan-500', 'text-cyan-400'));
-                    button.classList.add('active', 'border-cyan-500', 'text-cyan-400');
+                    tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
 
                     contentPanelsContainer.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
                     const targetId = button.dataset.target;
@@ -357,8 +371,12 @@
             contentPanelsContainer.addEventListener('click', (e) => {
                 const button = e.target.closest('.toggle-details-btn');
                 if (button) {
-                    const detailsContent = button.parentElement.nextElementSibling;
-                    const isHidden = detailsContent.classList.toggle('hidden');
+                    const detailsDiv = button.closest('.details');
+                    const tables = detailsDiv.querySelectorAll('.overflow-x-auto, .block.md\\:hidden');
+                    let isHidden = false;
+                    tables.forEach(el => {
+                        isHidden = el.classList.toggle('hidden');
+                    });
                     button.innerHTML = isHidden ? eyeClosedSVG : eyeOpenSVG;
                 }
             });
