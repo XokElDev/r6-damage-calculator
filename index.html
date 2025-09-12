@@ -14,30 +14,49 @@
             background-color: #0891b2; /* color de cyan-600 */
             color: white;
         }
+        .flag-icon {
+            cursor: pointer;
+            width: 32px;
+            height: 24px;
+            border-radius: 4px;
+            transition: transform 0.2s;
+            border: 2px solid transparent;
+        }
+        .flag-icon:hover {
+            transform: scale(1.1);
+        }
+        .flag-icon.active {
+            border-color: #22d3ee; /* cyan-400 */
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-3xl bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
+    <div class="w-full max-w-4xl bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
         
-        <div class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400">R6 Damage Calculator</h1>
-            <p class="text-gray-400 mt-2">Compara el daño base con el daño aumentado en diferentes escenarios.</p>
+        <div class="flex justify-between items-start mb-8">
+             <div class="text-left">
+                <h1 data-lang-key="title" class="text-3xl md:text-4xl font-bold text-cyan-400">R6 Damage Calculator</h1>
+                <p data-lang-key="subtitle" class="text-gray-400 mt-2">Compara el daño base con el daño aumentado en diferentes escenarios.</p>
+            </div>
+            <div id="language-switcher" class="flex space-x-2">
+                <!-- Flags will be injected here -->
+            </div>
         </div>
 
         <!-- Input Form -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-                <label for="rawDamage" class="block text-sm font-medium text-gray-300 mb-2">Daño Base (Raw)</label>
+                <label for="rawDamage" data-lang-key="raw_damage_label" class="block text-sm font-medium text-gray-300 mb-2">Daño Base (Raw)</label>
                 <input type="number" id="rawDamage" placeholder="Ej: 26" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
             </div>
             <div>
-                <label for="augmentedDamage" class="block text-sm font-medium text-gray-300 mb-2">Daño Aumentado</label>
+                <label for="augmentedDamage" data-lang-key="augmented_damage_label" class="block text-sm font-medium text-gray-300 mb-2">Daño Aumentado</label>
                 <input type="number" id="augmentedDamage" placeholder="Ej: 29" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
             </div>
         </div>
         
-        <button id="calculateBtn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
+        <button id="calculateBtn" data-lang-key="calculate_button" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
             Calcular
         </button>
 
@@ -45,12 +64,10 @@
         <div id="error-message" class="mt-4 text-center text-red-400 font-medium hidden"></div>
 
         <!-- Tabs Container -->
-        <div id="tabs-container" class="mt-8 border-b border-gray-700 hidden">
-            <nav class="flex -mb-px space-x-4" aria-label="Tabs">
-                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-100">P. Débil (Corta) - 100%</button>
-                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-70">P. Débil (Larga) - 70%</button>
-                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-50">P. Prot (Corta) - 50%</button>
-                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-30">P. Prot (Larga) - 30%</button>
+        <div id="tabs-container" class="mt-8 hidden">
+            <h3 data-lang-key="tabs_header" class="text-center text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider"></h3>
+            <nav class="flex justify-around w-full border-b border-gray-700 -mb-px" aria-label="Tabs">
+                <!-- Tabs will be dynamically generated -->
             </nav>
         </div>
 
@@ -58,56 +75,208 @@
         <div id="content-panels" class="mt-6">
             <!-- Dynamically generated content will go here -->
         </div>
-        
-        <!-- Toggle Details Button -->
-        <div id="details-toggle-container" class="mt-4 text-center hidden">
-            <button id="toggleDetailsBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition">
-                Mostrar Detalles
-            </button>
-        </div>
 
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
             const calculateBtn = document.getElementById('calculateBtn');
             const rawDamageInput = document.getElementById('rawDamage');
             const augmentedDamageInput = document.getElementById('augmentedDamage');
             const errorMessageDiv = document.getElementById('error-message');
             const tabsContainer = document.getElementById('tabs-container');
             const contentPanelsContainer = document.getElementById('content-panels');
-            const detailsToggleContainer = document.getElementById('details-toggle-container');
-            const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+            const languageSwitcherDiv = document.getElementById('language-switcher');
+            
+            // --- Data & State ---
+            let currentLanguage = 'es';
 
-            const damageScenarios = [
-                { id: '100', name: 'Punto Débil (Corta)', multiplier: 1.0 },
-                { id: '70', name: 'Punto Débil (Larga)', multiplier: 0.7 },
-                { id: '50', name: 'P. Prot (Corta)', multiplier: 0.5 },
-                { id: '30', name: 'P. Prot (Larga)', multiplier: 0.3 }
+            const translations = {
+                es: {
+                    title: "R6 Damage Calculator",
+                    subtitle: "Compara el daño base con el daño aumentado en diferentes escenarios.",
+                    raw_damage_label: "Daño Base (Raw)",
+                    augmented_damage_label: "Daño Aumentado",
+                    calculate_button: "Calcular",
+                    error_positive_values: "Por favor, introduce valores de daño válidos y positivos.",
+                    error_augmented_greater: "El daño aumentado debe ser mayor que el daño base.",
+                    results_title: "Resultados",
+                    detailed_analysis_title: "Análisis Detallado",
+                    operator_hp: "Operador (HP)",
+                    shots_base: "Disparos (Base)",
+                    shots_augmented: "Disparos (Aumentado)",
+                    improvement: "Mejora",
+                    exact_shots_base: "Disparos Exactos (Base)",
+                    exact_shots_augmented: "Disparos Exactos (Aumentado)",
+                    difference: "Diferencia",
+                    fast_op: "Rápido (100 HP)",
+                    medium_op: "Medio (110 HP)",
+                    slow_op: "Lento (125 HP)",
+                    body_short: "Cuerpo (Corta)",
+                    body_long: "Cuerpo (Larga)",
+                    limbs_short: "Extremidades (Corta)",
+                    limbs_long: "Extremidades (Larga)",
+                    tabs_header: "Cuerpo / Extremidades (Distancia)"
+                },
+                en: {
+                    title: "R6 Damage Calculator",
+                    subtitle: "Compare base damage with augmented damage in different scenarios.",
+                    raw_damage_label: "Base Damage (Raw)",
+                    augmented_damage_label: "Augmented Damage",
+                    calculate_button: "Calculate",
+                    error_positive_values: "Please enter valid, positive damage values.",
+                    error_augmented_greater: "Augmented damage must be greater than base damage.",
+                    results_title: "Results",
+                    detailed_analysis_title: "Detailed Analysis",
+                    operator_hp: "Operator (HP)",
+                    shots_base: "Shots (Base)",
+                    shots_augmented: "Shots (Augmented)",
+                    improvement: "Improvement",
+                    exact_shots_base: "Exact Shots (Base)",
+                    exact_shots_augmented: "Exact Shots (Augmented)",
+                    difference: "Difference",
+                    fast_op: "Fast (100 HP)",
+                    medium_op: "Medium (110 HP)",
+                    slow_op: "Slow (125 HP)",
+                    body_short: "Body (Short)",
+                    body_long: "Body (Long)",
+                    limbs_short: "Limbs (Short)",
+                    limbs_long: "Limbs (Long)",
+                    tabs_header: "Body / Limbs (Distance)"
+                },
+                fr: {
+                    title: "Calculateur de Dégâts R6",
+                    subtitle: "Comparez les dégâts de base avec les dégâts augmentés dans différents scénarios.",
+                    raw_damage_label: "Dégâts de Base (Raw)",
+                    augmented_damage_label: "Dégâts Augmentés",
+                    calculate_button: "Calculer",
+                    error_positive_values: "Veuillez entrer des valeurs de dégâts valides et positives.",
+                    error_augmented_greater: "Les dégâts augmentés doivent être supérieurs aux dégâts de base.",
+                    results_title: "Résultats",
+                    detailed_analysis_title: "Analyse Détaillée",
+                    operator_hp: "Opérateur (PV)",
+                    shots_base: "Tirs (Base)",
+                    shots_augmented: "Tirs (Augmenté)",
+                    improvement: "Amélioration",
+                    exact_shots_base: "Tirs Exacts (Base)",
+                    exact_shots_augmented: "Tirs Exacts (Augmenté)",
+                    difference: "Différence",
+                    fast_op: "Rapide (100 PV)",
+                    medium_op: "Moyen (110 PV)",
+                    slow_op: "Lent (125 PV)",
+                    body_short: "Corps (Courte)",
+                    body_long: "Corps (Longue)",
+                    limbs_short: "Membres (Courte)",
+                    limbs_long: "Membres (Longue)",
+                    tabs_header: "Corps / Membres (Distance)"
+                },
+                de: {
+                    title: "R6 Schadensrechner",
+                    subtitle: "Vergleichen Sie den Basisschaden mit dem erhöhten Schaden in verschiedenen Szenarien.",
+                    raw_damage_label: "Basisschaden (Raw)",
+                    augmented_damage_label: "Erhöhter Schaden",
+                    calculate_button: "Berechnen",
+                    error_positive_values: "Bitte geben Sie gültige, positive Schadenswerte ein.",
+                    error_augmented_greater: "Erhöhter Schaden muss größer sein als Basisschaden.",
+                    results_title: "Ergebnisse",
+                    detailed_analysis_title: "Detaillierte Analyse",
+                    operator_hp: "Operator (LP)",
+                    shots_base: "Schüsse (Basis)",
+                    shots_augmented: "Schüsse (Erhöht)",
+                    improvement: "Verbesserung",
+                    exact_shots_base: "Exakte Schüsse (Basis)",
+                    exact_shots_augmented: "Exakte Schüsse (Erhöht)",
+                    difference: "Unterschied",
+                    fast_op: "Schnell (100 LP)",
+                    medium_op: "Mittel (110 LP)",
+                    slow_op: "Langsam (125 LP)",
+                    body_short: "Körper (Kurz)",
+                    body_long: "Körper (Lang)",
+                    limbs_short: "Gliedmaßen (Kurz)",
+                    limbs_long: "Gliedmaßen (Lang)",
+                    tabs_header: "Körper / Gliedmaßen (Distanz)"
+                }
+            };
+            
+            const languages = [
+                { code: 'es', flag: '🇪🇸', country: 'Spain' },
+                { code: 'en', flag: '🇺🇸', country: 'USA' },
+                { code: 'fr', flag: '🇫🇷', country: 'France' },
+                { code: 'de', flag: '🇩🇪', country: 'Germany' }
             ];
 
-            const operatorHP = {
-                'Rápido (100 HP)': 100.0,
-                'Medio (110 HP)': 110.0,
-                'Lento (125 HP)': 125.0
+            const damageScenarios = [
+                { id: '100', nameKey: 'body_short', multiplier: 1.0, percentage: '100%' },
+                { id: '70', nameKey: 'body_long', multiplier: 0.7, percentage: '70%' },
+                { id: '50', nameKey: 'limbs_short', multiplier: 0.5, percentage: '50%' },
+                { id: '30', nameKey: 'limbs_long', multiplier: 0.3, percentage: '30%' }
+            ];
+
+            const operatorHPKeys = {
+                fast_op: 100.0,
+                medium_op: 110.0,
+                slow_op: 125.0
+            };
+            
+            const eyeOpenSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
+            const eyeClosedSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67.127 2.455.364m0 18.461A10.05 10.05 0 0012 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.725 0 3.35.416 4.785 1.155M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" /></svg>`;
+
+            // --- Functions ---
+            const changeLanguage = (lang) => {
+                currentLanguage = lang;
+                document.querySelectorAll('[data-lang-key]').forEach(el => {
+                    const key = el.dataset.langKey;
+                    if (translations[lang][key]) {
+                        el.textContent = translations[lang][key];
+                    }
+                });
+                
+                if (!tabsContainer.classList.contains('hidden')) {
+                    calculateAndRender();
+                }
+                updateActiveFlag();
             };
 
-            calculateBtn.addEventListener('click', () => {
+            const initLanguageSwitcher = () => {
+                let html = '';
+                languages.forEach(lang => {
+                    html += `<span class="flag-icon" data-lang="${lang.code}" title="${lang.country}">${lang.flag}</span>`;
+                });
+                languageSwitcherDiv.innerHTML = html;
+                languageSwitcherDiv.querySelectorAll('.flag-icon').forEach(flag => {
+                    flag.addEventListener('click', () => changeLanguage(flag.dataset.lang));
+                });
+                updateActiveFlag();
+            };
+            
+            const updateActiveFlag = () => {
+                 languageSwitcherDiv.querySelectorAll('.flag-icon').forEach(flag => {
+                    flag.classList.toggle('active', flag.dataset.lang === currentLanguage);
+                });
+            };
+
+            const calculateAndRender = () => {
                 const rawDmg = parseInt(rawDamageInput.value);
                 const augDmg = parseInt(augmentedDamageInput.value);
 
-                // --- Input validation ---
                 if (isNaN(rawDmg) || isNaN(augDmg) || rawDmg <= 0 || augDmg <= 0) {
-                    showError('Por favor, introduce valores de daño válidos y positivos.');
+                    showError(translations[currentLanguage].error_positive_values);
                     return;
                 }
                 if (augDmg <= rawDmg) {
-                    showError('El daño aumentado debe ser mayor que el daño base.');
+                    showError(translations[currentLanguage].error_augmented_greater);
                     return;
                 }
                 hideError();
+                
+                let tabsHTML = '';
+                damageScenarios.forEach(scenario => {
+                    const name = translations[currentLanguage][scenario.nameKey];
+                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow" data-target="content-${scenario.id}">${name} - ${scenario.percentage}</button>`;
+                });
+                tabsContainer.querySelector('nav').innerHTML = tabsHTML;
 
-                // --- Generate all content panels ---
                 let panelsHTML = '';
                 damageScenarios.forEach(scenario => {
                     let resultsHTML = '';
@@ -115,7 +284,7 @@
                     const modifiedRawDmg = rawDmg * scenario.multiplier;
                     const modifiedAugDmg = augDmg * scenario.multiplier;
 
-                    for (const [operator, hp] of Object.entries(operatorHP)) {
+                    for (const [opKey, hp] of Object.entries(operatorHPKeys)) {
                         const shotsRaw = Math.ceil(hp / modifiedRawDmg);
                         const shotsAugmented = Math.ceil(hp / modifiedAugDmg);
                         const hasBenefit = Math.floor(hp / modifiedRawDmg) !== Math.floor(hp / modifiedAugDmg);
@@ -124,73 +293,81 @@
                             ? `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-500/20 text-green-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></span>`
                             : `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500/20 text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.697a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></span>`;
                         
-                        resultsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operator}</td><td class="p-4 text-center text-lg font-semibold text-gray-200">${shotsRaw}</td><td class="p-4 text-center text-lg font-semibold ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${shotsAugmented}</td><td class="p-4 flex justify-center items-center">${benefitIcon}</td></tr>`;
+                        const operatorName = translations[currentLanguage][opKey];
+                        resultsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-semibold text-gray-200">${shotsRaw}</td><td class="p-4 text-center text-lg font-semibold ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${shotsAugmented}</td><td class="p-4 flex justify-center items-center">${benefitIcon}</td></tr>`;
                         
                         const exactShotsRaw = hp / modifiedRawDmg;
                         const exactShotsAugmented = hp / modifiedAugDmg;
-                        detailsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operator}</td><td class="p-4 text-center text-lg font-mono text-gray-200">${exactShotsRaw.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${exactShotsAugmented.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono text-yellow-400">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</td></tr>`;
+                        detailsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operatorName}</td><td class="p-4 text-center text-lg font-mono text-gray-200">${exactShotsRaw.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${exactShotsAugmented.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono text-yellow-400">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</td></tr>`;
                     }
                     
                     panelsHTML += `
                         <div id="content-${scenario.id}" class="tab-content hidden">
-                            <!-- Results Section -->
                             <div class="results">
-                                <h2 class="text-2xl font-semibold text-center mb-4">Resultados (${scenario.name})</h2>
-                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">Operador (HP)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos (Base)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos (Aumentado)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Mejora</th></tr></thead><tbody>${resultsHTML}</tbody></table></div>
+                                <h2 class="text-2xl font-semibold text-center mb-4">${translations[currentLanguage].results_title}</h2>
+                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].improvement}</th></tr></thead><tbody>${resultsHTML}</tbody></table></div>
                             </div>
-                            <!-- Detailed Results Section -->
                             <div class="details mt-6">
-                                <h2 class="text-2xl font-semibold text-center mb-4">Análisis Detallado</h2>
-                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">Operador (HP)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos Exactos (Base)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos Exactos (Aumentado)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Diferencia</th></tr></thead><tbody>${detailsHTML}</tbody></table></div>
+                                <div class="flex justify-center items-center mb-4"><h2 class="text-2xl font-semibold">${translations[currentLanguage].detailed_analysis_title}</h2><button class="toggle-details-btn ml-4 text-gray-400 hover:text-white">${eyeOpenSVG}</button></div>
+                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].operator_hp}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_base}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].exact_shots_augmented}</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">${translations[currentLanguage].difference}</th></tr></thead><tbody>${detailsHTML}</tbody></table></div>
                             </div>
                         </div>`;
                 });
 
                 contentPanelsContainer.innerHTML = panelsHTML;
                 tabsContainer.classList.remove('hidden');
-                detailsToggleContainer.classList.remove('hidden');
 
-                // Activate the first tab by default
-                document.querySelector('.tab-btn').click();
-            });
+                tabsContainer.querySelector('.tab-btn').click();
+            };
 
-            tabsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('tab-btn')) {
-                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'border-cyan-500', 'text-cyan-400'));
-                    e.target.classList.add('active', 'border-cyan-500', 'text-cyan-400');
-
-                    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-                    const targetId = e.target.dataset.target;
-                    const activeTabContent = document.getElementById(targetId);
-                    activeTabContent.classList.remove('hidden');
-
-                    // Set button text based on the state of the details in the newly active tab
-                    const detailsDiv = activeTabContent.querySelector('.details');
-                    toggleDetailsBtn.textContent = detailsDiv.classList.contains('hidden') ? 'Mostrar Detalles' : 'Ocultar Detalles';
+            const handleEnterKey = (event) => {
+                if (event.key === 'Enter') {
+                    calculateBtn.click();
                 }
-            });
-
-            toggleDetailsBtn.addEventListener('click', () => {
-                const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
-                if (activeTabContent) {
-                    const detailsDiv = activeTabContent.querySelector('.details');
-                    const isHidden = detailsDiv.classList.toggle('hidden');
-                    toggleDetailsBtn.textContent = isHidden ? 'Mostrar Detalles' : 'Ocultar Detalles';
-                }
-            });
-
-            function showError(message) {
+            };
+            
+            const showError = (message) => {
                 errorMessageDiv.textContent = message;
                 errorMessageDiv.classList.remove('hidden');
                 tabsContainer.classList.add('hidden');
                 contentPanelsContainer.innerHTML = '';
-                detailsToggleContainer.classList.add('hidden');
-            }
+            };
 
-            function hideError() {
+            const hideError = () => {
                 errorMessageDiv.classList.add('hidden');
-            }
+            };
+
+            // --- Event Listeners ---
+            calculateBtn.addEventListener('click', calculateAndRender);
+            rawDamageInput.addEventListener('keyup', handleEnterKey);
+            augmentedDamageInput.addEventListener('keyup', handleEnterKey);
+
+            tabsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.tab-btn');
+                if (button) {
+                    tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'border-cyan-500', 'text-cyan-400'));
+                    button.classList.add('active', 'border-cyan-500', 'text-cyan-400');
+
+                    contentPanelsContainer.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                    const targetId = button.dataset.target;
+                    document.getElementById(targetId).classList.remove('hidden');
+                }
+            });
+
+            contentPanelsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.toggle-details-btn');
+                if (button) {
+                    const detailsContent = button.parentElement.nextElementSibling;
+                    const isHidden = detailsContent.classList.toggle('hidden');
+                    button.innerHTML = isHidden ? eyeClosedSVG : eyeOpenSVG;
+                }
+            });
+
+            // --- Initialization ---
+            initLanguageSwitcher();
+            changeLanguage(currentLanguage);
         });
     </script>
 </body>
 </html>
+
