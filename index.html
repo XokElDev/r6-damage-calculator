@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R6 Damage Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-btn.active {
+            background-color: #0891b2; /* color de cyan-600 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-3xl bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400">R6 Damage Calculator</h1>
+            <p class="text-gray-400 mt-2">Compara el daño base con el daño aumentado en diferentes escenarios.</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label for="rawDamage" class="block text-sm font-medium text-gray-300 mb-2">Daño Base (Raw)</label>
+                <input type="number" id="rawDamage" placeholder="Ej: 26" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
+            </div>
+            <div>
+                <label for="augmentedDamage" class="block text-sm font-medium text-gray-300 mb-2">Daño Aumentado</label>
+                <input type="number" id="augmentedDamage" placeholder="Ej: 29" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
+            </div>
+        </div>
+        
+        <button id="calculateBtn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
+            Calcular
+        </button>
+
+        <!-- Error Message -->
+        <div id="error-message" class="mt-4 text-center text-red-400 font-medium hidden"></div>
+
+        <!-- Tabs Container -->
+        <div id="tabs-container" class="mt-8 border-b border-gray-700 hidden">
+            <nav class="flex -mb-px space-x-4" aria-label="Tabs">
+                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-100">P. Débil (Corta) - 100%</button>
+                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-70">P. Débil (Larga) - 70%</button>
+                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-50">P. Prot (Corta) - 50%</button>
+                <button class="tab-btn whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500" data-target="content-30">P. Prot (Larga) - 30%</button>
+            </nav>
+        </div>
+
+        <!-- Content Panels -->
+        <div id="content-panels" class="mt-6">
+            <!-- Dynamically generated content will go here -->
+        </div>
+        
+        <!-- Toggle Details Button -->
+        <div id="details-toggle-container" class="mt-4 text-center hidden">
+            <button id="toggleDetailsBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition">
+                Mostrar Detalles
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const calculateBtn = document.getElementById('calculateBtn');
+            const rawDamageInput = document.getElementById('rawDamage');
+            const augmentedDamageInput = document.getElementById('augmentedDamage');
+            const errorMessageDiv = document.getElementById('error-message');
+            const tabsContainer = document.getElementById('tabs-container');
+            const contentPanelsContainer = document.getElementById('content-panels');
+            const detailsToggleContainer = document.getElementById('details-toggle-container');
+            const toggleDetailsBtn = document.getElementById('toggleDetailsBtn');
+
+            const damageScenarios = [
+                { id: '100', name: 'Punto Débil (Corta)', multiplier: 1.0 },
+                { id: '70', name: 'Punto Débil (Larga)', multiplier: 0.7 },
+                { id: '50', name: 'P. Prot (Corta)', multiplier: 0.5 },
+                { id: '30', name: 'P. Prot (Larga)', multiplier: 0.3 }
+            ];
+
+            const operatorHP = {
+                'Rápido (100 HP)': 100.0,
+                'Medio (110 HP)': 110.0,
+                'Lento (125 HP)': 125.0
+            };
+
+            calculateBtn.addEventListener('click', () => {
+                const rawDmg = parseInt(rawDamageInput.value);
+                const augDmg = parseInt(augmentedDamageInput.value);
+
+                // --- Input validation ---
+                if (isNaN(rawDmg) || isNaN(augDmg) || rawDmg <= 0 || augDmg <= 0) {
+                    showError('Por favor, introduce valores de daño válidos y positivos.');
+                    return;
+                }
+                if (augDmg <= rawDmg) {
+                    showError('El daño aumentado debe ser mayor que el daño base.');
+                    return;
+                }
+                hideError();
+
+                // --- Generate all content panels ---
+                let panelsHTML = '';
+                damageScenarios.forEach(scenario => {
+                    let resultsHTML = '';
+                    let detailsHTML = '';
+                    const modifiedRawDmg = rawDmg * scenario.multiplier;
+                    const modifiedAugDmg = augDmg * scenario.multiplier;
+
+                    for (const [operator, hp] of Object.entries(operatorHP)) {
+                        const shotsRaw = Math.ceil(hp / modifiedRawDmg);
+                        const shotsAugmented = Math.ceil(hp / modifiedAugDmg);
+                        const hasBenefit = Math.floor(hp / modifiedRawDmg) !== Math.floor(hp / modifiedAugDmg);
+                        
+                        const benefitIcon = hasBenefit
+                            ? `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-500/20 text-green-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg></span>`
+                            : `<span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500/20 text-red-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.697a1 1 0 010-1.414z" clip-rule="evenodd" /></svg></span>`;
+                        
+                        resultsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operator}</td><td class="p-4 text-center text-lg font-semibold text-gray-200">${shotsRaw}</td><td class="p-4 text-center text-lg font-semibold ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${shotsAugmented}</td><td class="p-4 flex justify-center items-center">${benefitIcon}</td></tr>`;
+                        
+                        const exactShotsRaw = hp / modifiedRawDmg;
+                        const exactShotsAugmented = hp / modifiedAugDmg;
+                        detailsHTML += `<tr class="border-b border-gray-800 last:border-b-0"><td class="p-4 font-medium text-gray-200">${operator}</td><td class="p-4 text-center text-lg font-mono text-gray-200">${exactShotsRaw.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono ${hasBenefit ? 'text-cyan-400' : 'text-gray-200'}">${exactShotsAugmented.toFixed(3)}</td><td class="p-4 text-center text-lg font-mono text-yellow-400">${(exactShotsRaw - exactShotsAugmented).toFixed(3)}</td></tr>`;
+                    }
+                    
+                    panelsHTML += `
+                        <div id="content-${scenario.id}" class="tab-content hidden">
+                            <!-- Results Section -->
+                            <div class="results">
+                                <h2 class="text-2xl font-semibold text-center mb-4">Resultados (${scenario.name})</h2>
+                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">Operador (HP)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos (Base)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos (Aumentado)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Mejora</th></tr></thead><tbody>${resultsHTML}</tbody></table></div>
+                            </div>
+                            <!-- Detailed Results Section -->
+                            <div class="details mt-6">
+                                <h2 class="text-2xl font-semibold text-center mb-4">Análisis Detallado</h2>
+                                <div class="overflow-x-auto rounded-lg"><table class="min-w-full bg-gray-700"><thead class="bg-gray-900/50"><tr><th class="p-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">Operador (HP)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos Exactos (Base)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Disparos Exactos (Aumentado)</th><th class="p-4 text-center text-sm font-semibold text-gray-300 uppercase tracking-wider">Diferencia</th></tr></thead><tbody>${detailsHTML}</tbody></table></div>
+                            </div>
+                        </div>`;
+                });
+
+                contentPanelsContainer.innerHTML = panelsHTML;
+                tabsContainer.classList.remove('hidden');
+                detailsToggleContainer.classList.remove('hidden');
+
+                // Activate the first tab by default
+                document.querySelector('.tab-btn').click();
+            });
+
+            tabsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tab-btn')) {
+                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'border-cyan-500', 'text-cyan-400'));
+                    e.target.classList.add('active', 'border-cyan-500', 'text-cyan-400');
+
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                    const targetId = e.target.dataset.target;
+                    const activeTabContent = document.getElementById(targetId);
+                    activeTabContent.classList.remove('hidden');
+
+                    // Set button text based on the state of the details in the newly active tab
+                    const detailsDiv = activeTabContent.querySelector('.details');
+                    toggleDetailsBtn.textContent = detailsDiv.classList.contains('hidden') ? 'Mostrar Detalles' : 'Ocultar Detalles';
+                }
+            });
+
+            toggleDetailsBtn.addEventListener('click', () => {
+                const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
+                if (activeTabContent) {
+                    const detailsDiv = activeTabContent.querySelector('.details');
+                    const isHidden = detailsDiv.classList.toggle('hidden');
+                    toggleDetailsBtn.textContent = isHidden ? 'Mostrar Detalles' : 'Ocultar Detalles';
+                }
+            });
+
+            function showError(message) {
+                errorMessageDiv.textContent = message;
+                errorMessageDiv.classList.remove('hidden');
+                tabsContainer.classList.add('hidden');
+                contentPanelsContainer.innerHTML = '';
+                detailsToggleContainer.classList.add('hidden');
+            }
+
+            function hideError() {
+                errorMessageDiv.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
