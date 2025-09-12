@@ -16,11 +16,15 @@
         }
         .flag-icon {
             cursor: pointer;
-            width: 32px;
+            width: 56px; /* Adjusted for two flags */
             height: 24px;
             border-radius: 4px;
             transition: transform 0.2s;
             border: 2px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
         .flag-icon:hover {
             transform: scale(1.1);
@@ -95,7 +99,7 @@
             const translations = {
                 es: {
                     title: "R6 Damage Calculator",
-                    subtitle: "Compara el daño base con el daño aumentado en diferentes escenarios.",
+                    subtitle: "Compara el daño en diferentes escenarios del <strong class='text-cyan-400'>Cañon Extendido</strong> introduciendo el daño base del arma y el daño aumentado con el cañon que aparecen en el juego.",
                     raw_damage_label: "Daño Base (Raw)",
                     augmented_damage_label: "Daño Aumentado",
                     calculate_button: "Calcular",
@@ -121,7 +125,7 @@
                 },
                 en: {
                     title: "R6 Damage Calculator",
-                    subtitle: "Compare base damage with augmented damage in different scenarios.",
+                    subtitle: "Compare the damage in different scenarios with the <strong class='text-cyan-400'>Extended Barrel</strong> by entering the weapon's base damage and the augmented damage with the barrel shown in the game.",
                     raw_damage_label: "Base Damage (Raw)",
                     augmented_damage_label: "Augmented Damage",
                     calculate_button: "Calculate",
@@ -147,7 +151,7 @@
                 },
                 fr: {
                     title: "Calculateur de Dégâts R6",
-                    subtitle: "Comparez les dégâts de base avec les dégâts augmentés dans différents scénarios.",
+                    subtitle: "Comparez les dégâts dans différents scénarios avec le <strong class='text-cyan-400'>Canon Allongé</strong> en saisissant les dégâts de base de l'arme et les dégâts augmentés avec le canon affichés dans le jeu.",
                     raw_damage_label: "Dégâts de Base (Raw)",
                     augmented_damage_label: "Dégâts Augmentés",
                     calculate_button: "Calculer",
@@ -173,7 +177,7 @@
                 },
                 de: {
                     title: "R6 Schadensrechner",
-                    subtitle: "Vergleichen Sie den Basisschaden mit dem erhöhten Schaden in verschiedenen Szenarien.",
+                    subtitle: "Vergleichen Sie den Schaden in verschiedenen Szenarien mit dem <strong class='text-cyan-400'>Verlängerten Lauf</strong>, indem Sie den Basisschaden der Waffe und den erhöhten Schaden mit dem im Spiel angezeigten Lauf eingeben.",
                     raw_damage_label: "Basisschaden (Raw)",
                     augmented_damage_label: "Erhöhter Schaden",
                     calculate_button: "Berechnen",
@@ -201,7 +205,7 @@
             
             const languages = [
                 { code: 'es', flag: '🇪🇸', country: 'Spain' },
-                { code: 'en', flag: '🇺🇸', country: 'USA' },
+                { code: 'en', flag: '🇺🇸🇬🇧', country: 'English' },
                 { code: 'fr', flag: '🇫🇷', country: 'France' },
                 { code: 'de', flag: '🇩🇪', country: 'Germany' }
             ];
@@ -229,7 +233,7 @@
                 document.querySelectorAll('[data-lang-key]').forEach(el => {
                     const key = el.dataset.langKey;
                     if (translations[lang][key]) {
-                        el.textContent = translations[lang][key];
+                        el.innerHTML = translations[lang][key];
                     }
                 });
                 
@@ -274,7 +278,7 @@
                 let tabsHTML = '';
                 damageScenarios.forEach(scenario => {
                     const name = translations[currentLanguage][scenario.nameKey];
-                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow md:flex-grow-0 w-full md:w-auto mb-1 md:mb-0 rounded-md md:rounded-none" data-target="content-${scenario.id}">${name} - ${scenario.percentage}</button>`;
+                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow md:flex-grow-0 w-full md:w-auto mb-1 md:mb-0 rounded-md md:rounded-none" data-target="content-${scenario.id}">${name}</button>`;
                 });
                 tabsContainer.querySelector('nav').innerHTML = tabsHTML;
 
