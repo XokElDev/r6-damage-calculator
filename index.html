@@ -94,8 +94,6 @@
             const languageSwitcherDiv = document.getElementById('language-switcher');
             
             // --- Data & State ---
-            let currentLanguage = 'es';
-
             const translations = {
                 es: {
                     title: "R6 Damage Calculator",
@@ -225,6 +223,14 @@
             
             const eyeOpenSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`;
             const eyeClosedSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 .847 0 1.67.127 2.455.364m0 18.461A10.05 10.05 0 0012 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.725 0 3.35.416 4.785 1.155M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" /></svg>`;
+
+            // --- Language Initialization ---
+            const getInitialLanguage = () => {
+                const browserLang = (navigator.language || navigator.userLanguage).slice(0, 2);
+                const isSupported = languages.some(lang => lang.code === browserLang);
+                return isSupported ? browserLang : 'en'; // Default to English
+            };
+            let currentLanguage = getInitialLanguage();
 
             // --- Functions ---
             const changeLanguage = (lang) => {
