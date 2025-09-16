@@ -49,15 +49,18 @@
         </div>
 
         <!-- Input Form -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
             <div>
                 <label for="rawDamage" data-lang-key="raw_damage_label" class="block text-sm font-medium text-gray-300 mb-2">Daño Base (Raw)</label>
-                <input type="number" id="rawDamage" placeholder="Ej: 26" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
+                <input type="text" inputmode="decimal" id="rawDamage" placeholder="Ej: 26" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
             </div>
             <div>
                 <label for="augmentedDamage" data-lang-key="augmented_damage_label" class="block text-sm font-medium text-gray-300 mb-2">Daño Aumentado</label>
-                <input type="number" id="augmentedDamage" placeholder="Ej: 29" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
+                <input type="text" inputmode="decimal" id="augmentedDamage" placeholder="Ej: 29" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
             </div>
+        </div>
+        <div class="mb-6">
+             <p data-lang-key="decimal_warning" class="text-xs text-gray-500 text-center"></p>
         </div>
         
         <button id="calculateBtn" data-lang-key="calculate_button" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
@@ -101,6 +104,7 @@
                     raw_damage_label: "Daño Base (Raw)",
                     augmented_damage_label: "Daño Aumentado",
                     calculate_button: "Calcular",
+                    decimal_warning: "Puedes usar '.' o ',' para los decimales.",
                     error_positive_values: "Por favor, introduce valores de daño válidos y positivos.",
                     error_augmented_greater: "El daño aumentado debe ser mayor que el daño base.",
                     results_title: "Resultados",
@@ -127,6 +131,7 @@
                     raw_damage_label: "Base Damage (Raw)",
                     augmented_damage_label: "Augmented Damage",
                     calculate_button: "Calculate",
+                    decimal_warning: "You can use '.' or ',' for decimals.",
                     error_positive_values: "Please enter valid, positive damage values.",
                     error_augmented_greater: "Augmented damage must be greater than base damage.",
                     results_title: "Results",
@@ -153,6 +158,7 @@
                     raw_damage_label: "Dégâts de Base (Raw)",
                     augmented_damage_label: "Dégâts Augmentés",
                     calculate_button: "Calculer",
+                    decimal_warning: "Vous pouvez utiliser '.' ou ',' pour les décimales.",
                     error_positive_values: "Veuillez entrer des valeurs de dégâts valides et positives.",
                     error_augmented_greater: "Les dégâts augmentés doivent être supérieurs aux dégâts de base.",
                     results_title: "Résultats",
@@ -179,6 +185,7 @@
                     raw_damage_label: "Basisschaden (Raw)",
                     augmented_damage_label: "Erhöhter Schaden",
                     calculate_button: "Berechnen",
+                    decimal_warning: "Sie können '.' oder ',' für Dezimalzahlen verwenden.",
                     error_positive_values: "Bitte geben Sie gültige, positive Schadenswerte ein.",
                     error_augmented_greater: "Erhöhter Schaden muss größer sein als Basisschaden.",
                     results_title: "Ergebnisse",
@@ -209,10 +216,10 @@
             ];
 
             const damageScenarios = [
-                { id: '100', nameKey: 'body_short', multiplier: 1.0, percentage: '100%' },
-                { id: '70', nameKey: 'body_long', multiplier: 0.7, percentage: '70%' },
-                { id: '50', nameKey: 'limbs_short', multiplier: 0.5, percentage: '50%' },
-                { id: '30', nameKey: 'limbs_long', multiplier: 0.3, percentage: '30%' }
+                { id: 'body_short', nameKey: 'body_short', rawMultiplier: 1.0, augMultiplier: 1.0 },
+                { id: 'body_long', nameKey: 'body_long', rawMultiplier: 0.6, augMultiplier: 0.8 },
+                { id: 'limbs_short', nameKey: 'limbs_short', rawMultiplier: 0.5, augMultiplier: 0.5 },
+                { id: 'limbs_long', nameKey: 'limbs_long', rawMultiplier: 0.3, augMultiplier: 0.4 }
             ];
 
             const operatorHPKeys = {
@@ -268,8 +275,11 @@
             };
 
             const calculateAndRender = () => {
-                const rawDmg = parseInt(rawDamageInput.value);
-                const augDmg = parseInt(augmentedDamageInput.value);
+                const rawDmgValue = rawDamageInput.value.replace(',', '.');
+                const augDmgValue = augmentedDamageInput.value.replace(',', '.');
+                
+                const rawDmg = parseFloat(rawDmgValue);
+                const augDmg = parseFloat(augDmgValue);
 
                 if (isNaN(rawDmg) || isNaN(augDmg) || rawDmg <= 0 || augDmg <= 0) {
                     showError(translations[currentLanguage].error_positive_values);
@@ -281,10 +291,19 @@
                 }
                 hideError();
                 
+                const bodyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M10,4A3,3 0 0,1 7,7V13H5A1,1 0 0,0 4,14V20A1,1 0 0,0 5,21H9A1,1 0 0,0 10,20V14C10,13.61 10.25,13.26 10.61,13.08L12,12.5L13.39,13.08C13.75,13.26 14,13.61 14,14V20A1,1 0 0,0 15,21H19A1,1 0 0,0 20,20V14A1,1 0 0,0 19,13H17V7A3,3 0 0,1 14,4C12.94,4 12,4.53 11.38,5.38C10.79,4.5 10,4 10,4M10,6C10,6 10.33,6.25 10.73,6.85L12,8.5L13.27,6.85C13.67,6.25 14,6 14,6A1,1 0 0,1 15,7V13H14V11.5A1.5,1.5 0 0,0 12.5,10A1.5,1.5 0 0,0 11,11.5V13H9V7A1,1 0 0,1 10,6Z" /></svg>`;
+                const limbsIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9,22.45c-1.38,1.38-3.62,1.38-5,0L5.7,14.21c-1.17-1.17-1.17-3.07,0-4.24l8.19-8.19c1.38-1.38,3.62-1.38,5,0c1.38,1.38,1.38,3.62,0,5l-3.07,3.07l3.07,3.07C20.28,18.83,20.28,21.07,18.9,22.45z M16.07,19.62c0.59,0.59,1.54,0.59,2.12,0c0.59-0.59,0.59-1.54,0-2.12L15.36,14.67l-2.12,2.12L16.07,19.62z M10.41,11.83L12.53,9.7L9.46,6.64c-0.59-0.59-1.54-0.59-2.12,0c-0.59,0.59-0.59,1.54,0,2.12L10.41,11.83z"/></svg>`;
+
                 let tabsHTML = '';
                 damageScenarios.forEach(scenario => {
                     const name = translations[currentLanguage][scenario.nameKey];
-                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow md:flex-grow-0 w-full md:w-auto mb-1 md:mb-0 rounded-md md:rounded-none" data-target="content-${scenario.id}">${name}</button>`;
+                    let icon = '';
+                    if (scenario.id.includes('body')) {
+                        icon = bodyIconSVG;
+                    } else if (scenario.id.includes('limbs')) {
+                        icon = limbsIconSVG;
+                    }
+                    tabsHTML += `<button class="tab-btn whitespace-nowrap py-3 px-2 border-b-2 font-medium text-sm border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500 flex-grow md:flex-grow-0 w-full md:w-auto mb-1 md:mb-0 rounded-md md:rounded-none flex items-center justify-center" data-target="content-${scenario.id}">${icon}<span>${name}</span></button>`;
                 });
                 tabsContainer.querySelector('nav').innerHTML = tabsHTML;
 
@@ -294,8 +313,9 @@
                     let resultsCardsHTML = '';
                     let detailsTableHTML = '';
                     let detailsCardsHTML = '';
-                    const modifiedRawDmg = rawDmg * scenario.multiplier;
-                    const modifiedAugDmg = augDmg * scenario.multiplier;
+                    
+                    const modifiedRawDmg = rawDmg * scenario.rawMultiplier;
+                    const modifiedAugDmg = augDmg * scenario.augMultiplier;
 
                     for (const [opKey, hp] of Object.entries(operatorHPKeys)) {
                         const shotsRaw = Math.ceil(hp / modifiedRawDmg);
